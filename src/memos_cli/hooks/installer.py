@@ -53,10 +53,21 @@ _HOOK_AGENT_RE = re.compile(
 )
 
 
+def _token_basename(token: str) -> str:
+    return Path(token.strip().strip("'\"")).name.lower()
+
+
 def _hook_command_agent(command: str) -> str | None:
     if not command:
         return None
-    if ANTIGRAVITY_ADAPTER_FILENAME.lower() in command.lower():
+    try:
+        parts = shlex.split(command)
+    except ValueError:
+        parts = []
+    # Match the adapter by basename only. A directory component that happens
+    # to contain the filename must not mark an unrelated command as managed.
+    names = {_token_basename(token) for token in (*parts, *command.split())}
+    if ANTIGRAVITY_ADAPTER_FILENAME in names:
         return "antigravity"
     match = _HOOK_AGENT_RE.search(command)
     if match:
@@ -65,9 +76,7 @@ def _hook_command_agent(command: str) -> str | None:
     # POSIX-quoted commands remain parseable with shlex; Windows cmd quoting
     # and unquoted drive paths are handled by the regex above because
     # shlex.split() treats backslashes as escape characters.
-    try:
-        parts = shlex.split(command)
-    except ValueError:
+    if not parts:
         return None
 
     for index, part in enumerate(parts):

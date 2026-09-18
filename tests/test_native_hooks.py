@@ -2164,8 +2164,22 @@ def test_hook_command_agent_parses_windows_cmd_paths():
 
     quoted = r'"C:\Program Files\memos.exe" hook run --agent cursor --event beforeSubmitPrompt'
     unquoted = r"C:\Users\example\AppData\Roaming\npm\memos.exe hook run --agent cursor"
-    posix = "'/usr/bin/memos' hook run --agent cursor --event beforeSubmitPrompt"
+    posix = "/usr/bin/memos hook run --agent cursor --event beforeSubmitPrompt"
+    posix_quoted = "'/usr/local/my memos/memos' hook run --agent cursor --event beforeSubmitPrompt"
 
     assert _hook_command_agent(quoted) == "cursor"
     assert _hook_command_agent(unquoted) == "cursor"
     assert _hook_command_agent(posix) == "cursor"
+    assert _hook_command_agent(posix_quoted) == "cursor"
+
+
+def test_hook_command_agent_matches_adapter_basename_only():
+    from memos_cli.hooks.installer import _hook_command_agent
+
+    decoy = "/home/user/memos-antigravity-hook-adapter.py.bak/run.py --event Stop"
+    windows_decoy = r"C:\hooks\memos-antigravity-hook-adapter.py\wrapper.exe --event Stop"
+    real = "/home/user/.gemini/config/memos-antigravity-hook-adapter.py --event Stop"
+
+    assert _hook_command_agent(decoy) is None
+    assert _hook_command_agent(windows_decoy) is None
+    assert _hook_command_agent(real) == "antigravity"
