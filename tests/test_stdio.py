@@ -39,6 +39,16 @@ class StdioCompatibilityTests(unittest.TestCase):
     def test_missing_stream_is_ignored(self) -> None:
         _configure_stream(None)
 
+    def test_redirected_stdin_uses_utf8(self) -> None:
+        stream = FakeStream(is_terminal=False)
+
+        _configure_stream(stream)
+
+        self.assertEqual(
+            stream.calls,
+            [{"errors": "backslashreplace", "encoding": "utf-8"}],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
